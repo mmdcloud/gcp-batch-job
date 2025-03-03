@@ -1,74 +1,52 @@
 locals {
   artifact_type = "DOCKER"
-
-}
-resource "google_service_account" "batchnews_service_account" {
-  account_id   = "${var.repository_id}-sa"
-  display_name = "${var.repository_id}-sa"
 }
 
-resource "google_project_iam_member" "artifact_registry_administrator" {
-  project = var.project_id
-  role    = "roles/artifactregistry.admin"
-  member  = "serviceAccount:${google_service_account.batchnews_service_account.email}"
+# Service account for batch job
+module "batch_job_sa" {
+  source       = "./modules/iam"
+  account_id   = "batch-job-sa"
+  display_name = "batch-job-sa"
+  permissions = [
+    "roles/artifactregistry.admin",
+    "roles/storage.admin",
+    "roles/bigquery.admin",
+    "roles/run.admin"
+  ]
+  project_id = var.project_id
 }
 
-resource "google_project_iam_member" "storage_admin" {
-  project = var.project_id
-  role    = "roles/storage.admin"
-  member  = "serviceAccount:${google_service_account.batchnews_service_account.email}"
-}
-
-resource "google_project_iam_member" "bigquery_admin" {
-  project = var.project_id
-  role    = "roles/bigquery.admin"
-  member  = "serviceAccount:${google_service_account.batchnews_service_account.email}"
-}
-
-resource "google_project_iam_member" "cloud_run_admin" {
-  project = var.project_id
-  role    = "roles/run.admin"
-  member  = "serviceAccount:${google_service_account.batchnews_service_account.email}"
-}
-
-resource "google_artifact_registry_repository" "batchnews_repo" {
+# Artifact Registry
+module "batch_job_artifact_registry" {
+  source        = "./modules/artifact-registry"
   location      = var.location
-  repository_id = var.repository_id
-  description   = var.repository_description
-  format        = local.artifact_type
+  description   = "Batch Job Artifact Registry"
+  repository_id = "batch-job-artifact-registry"
+  shell_command = "bash ${path.cwd}/../artifact_push.sh batchnews ${var.location} ${var.project_id}"
 }
 
-resource "null_resource" "batchnews_artifact" {
-  provisioner "local-exec" {
-    command = "bash ${path.cwd}/../artifact_push.sh batchnews ${var.location} ${var.project_id}"
-  }
-}
-
-resource "google_cloud_run_v2_job" "batchnews_job" {
+module "batchnews_job" {
+  source              = "./modules/cloud-run-job"
   name                = "batchnews"
   location            = var.location
   deletion_protection = false
-  
-  template {    
-    template {
-      service_account = google_service_account.batchnews_service_account.email
-      containers {
-        image = "${var.location}-docker.pkg.dev/${var.project_id}/batchnews/batchnews:latest"
-      }
+  sa                  = module.batch_job_sa.email
+  containers = [
+    {
+      image = "${var.location}-docker.pkg.dev/${var.project_id}/batchnews/batchnews:latest"
     }
-  }
-  depends_on = [null_resource.batchnews_artifact]
+  ]
+  depends_on = [module.batch_job_artifact_registry]
 }
 
-resource "google_bigquery_dataset" "batchnews_dataset" {
+# BigQuery configuration 
+module "batch_job_bq" {
+  source     = "./modules/bigquery"
   dataset_id = "batchnews"
-}
-
-resource "google_bigquery_table" "batchnews_table" {
-  table_id   = "batchnewstable"
-  dataset_id = google_bigquery_dataset.batchnews_dataset.dataset_id
-
-  schema = <<EOF
+  tables = [
+    {
+      table               = "batchnewstable"
+      schema              = <<EOF
 [
   {
     "name": "title",
@@ -90,6 +68,7 @@ resource "google_bigquery_table" "batchnews_table" {
   }
 ]
 EOF
-
-  deletion_protection = false
+      deletion_protection = false
+    }
+  ]
 }
