@@ -13,4 +13,5 @@ resource "null_resource" "push_artifact" {
   provisioner "local-exec" {
     command = var.shell_command
   }
+  depends_on = [ google_artifact_registry_repository.repo ]
 }

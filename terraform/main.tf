@@ -20,8 +20,8 @@ module "batch_job_sa" {
 module "batch_job_artifact_registry" {
   source        = "./modules/artifact-registry"
   location      = var.location
-  description   = "Batch Job Artifact Registry"
-  repository_id = "batch-job-artifact-registry"
+  description   = var.repository_description
+  repository_id = var.repository_id
   shell_command = "bash ${path.cwd}/../artifact_push.sh batchnews ${var.location} ${var.project_id}"
 }
 
