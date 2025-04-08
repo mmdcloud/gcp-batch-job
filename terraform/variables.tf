@@ -5,7 +5,7 @@ variable "location" {
 
 variable "project_id" {
   type    = string
-  default = "nodal-talon-445602-m1"
+  default = "orbital-bee-455915-h5"
 }
 
 variable "repository_id" {

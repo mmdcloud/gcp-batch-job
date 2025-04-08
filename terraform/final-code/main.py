@@ -26,7 +26,7 @@ def call_news_api_and_ingest():
         )
 
     # Set up BigQuery client
-    project_id = 'nodal-talon-445602-m1'
+    project_id = 'orbital-bee-455915-h5'
     dataset_id = 'batchnews'
     table_id = 'batchnewstable'
     client = bigquery.Client(project=project_id)
