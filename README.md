@@ -1,191 +1,268 @@
-# News API to BigQuery Cloud Run Job
+# News API Data Pipeline
 
-A Google Cloud Run Job that periodically fetches news articles from the News API and stores the data in BigQuery for analysis and archiving.
-
-## Overview
-
-This project implements an automated data pipeline that:
-
-1. Runs as a scheduled Cloud Run job
-2. Fetches the latest news articles from the News API
-3. Transforms the data into a suitable format
-4. Loads the articles into a BigQuery table
-5. Provides logging and error handling
+A scalable news data collection pipeline that fetches articles from news APIs and stores them in Google BigQuery using Google Cloud Run Jobs.
 
 ## Architecture
 
-![Architecture Diagram](https://storage.googleapis.com/your-bucket/news-api-architecture.png)
+```mermaid
+graph TB
+    A[News API] --> B[Cloud Run Job]
+    B --> C[Docker Container]
+    C --> D[Python Script]
+    D --> E[BigQuery Dataset]
+    
+    F[Cloud Scheduler] -.-> B
+    G[Cloud Logging] --> B
+    H[Cloud Monitoring] --> B
+    
+    subgraph "Google Cloud Platform"
+        B
+        C
+        E
+        F
+        G
+        H
+    end
+    
+    style A fill:#ff9999
+    style B fill:#87CEEB
+    style C fill:#98FB98
+    style D fill:#DDA0DD
+    style E fill:#F0E68C
+```
 
-- **Cloud Run Job**: Serverless container that runs the data extraction process
-- **News API**: External REST API providing news articles from various sources
-- **BigQuery**: Data warehouse for storing and analyzing the news data
-- **Cloud Scheduler**: Triggers the Cloud Run job on a defined schedule
-- **Secret Manager**: Securely stores API keys and other credentials
+## Features
+
+- **Automated Data Collection**: Fetches news articles from external news APIs
+- **Scalable Processing**: Uses Google Cloud Run Jobs for serverless execution
+- **Data Storage**: Stores structured data in Google BigQuery for analysis
+- **Containerized**: Dockerized Python application for consistent deployment
+- **Monitoring**: Built-in logging and monitoring with Google Cloud services
+- **Scheduled Execution**: Can be triggered via Cloud Scheduler for regular updates
+
+## Tech Stack
+
+- **Runtime**: Python 3.9+
+- **Container**: Docker
+- **Cloud Platform**: Google Cloud Platform
+- **Compute**: Cloud Run Jobs
+- **Database**: Google BigQuery
+- **Scheduling**: Google Cloud Scheduler (optional)
+- **Monitoring**: Google Cloud Logging & Monitoring
 
 ## Prerequisites
 
-- Google Cloud Platform account with billing enabled
-- News API key ([get one here](https://newsapi.org/register))
-- The following APIs enabled:
-  - Cloud Run API
-  - BigQuery API
-  - Secret Manager API
-  - Cloud Scheduler API
+- Google Cloud Platform account
+- Google Cloud SDK installed and configured
+- Docker installed locally
+- Python 3.9+ for local development
+- News API key (e.g., NewsAPI.org, Guardian API, etc.)
 
-## Setup
+## Project Structure
 
-### 1. Clone the repository
+```
+news-api-pipeline/
+├── src/
+│   ├── main.py              # Main application script
+│   ├── news_fetcher.py      # News API client
+│   ├── bigquery_client.py   # BigQuery operations
+│   └── config.py            # Configuration management
+├── Dockerfile               # Container definition
+├── requirements.txt         # Python dependencies
+├── cloudbuild.yaml         # Cloud Build configuration
+├── job-spec.yaml           # Cloud Run Job specification
+├── .env.example            # Environment variables template
+├── .gitignore
+└── README.md
+```
+
+## Setup Instructions
+
+### 1. Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/news-api-to-bigquery.git
-cd news-api-to-bigquery
+git clone https://github.com/yourusername/news-api-pipeline.git
+cd news-api-pipeline
 ```
 
-### 2. Set up your environment variables
+### 2. Environment Configuration
 
-Create a `.env` file with the following variables:
-
+```bash
+cp .env.example .env
+# Edit .env with your configuration
 ```
-PROJECT_ID=your-gcp-project-id
-NEWS_API_KEY=your-news-api-key
+
+Required environment variables:
+```env
+NEWS_API_KEY=your_news_api_key
+GOOGLE_CLOUD_PROJECT=your-gcp-project-id
 BIGQUERY_DATASET=news_data
 BIGQUERY_TABLE=articles
 ```
 
-### 3. Store your News API key in Secret Manager
-
-```bash
-gcloud secrets create news-api-key --data-file=<(echo -n "your-news-api-key")
-```
-
-### 4. Create BigQuery dataset and table
-
-```bash
-# Create dataset
-bq mk --dataset ${PROJECT_ID}:news_data
-
-# Create table with schema
-bq mk --table \
-    --schema source:STRING,author:STRING,title:STRING,description:STRING,url:STRING,urlToImage:STRING,publishedAt:TIMESTAMP,content:STRING \
-    news_data.articles
-```
-
-### 5. Build and deploy the Cloud Run job
-
-```bash
-# Build using Cloud Build
-gcloud builds submit --tag gcr.io/${PROJECT_ID}/news-api-job
-
-# Deploy Cloud Run job
-gcloud run jobs create news-api-job \
-    --image gcr.io/${PROJECT_ID}/news-api-job \
-    --memory 512Mi \
-    --timeout 10m \
-    --set-secrets NEWS_API_KEY=news-api-key:latest \
-    --region us-central1
-```
-
-### 6. Set up Cloud Scheduler to run the job
-
-```bash
-# Create a scheduler job to run every hour
-gcloud scheduler jobs create http news-api-scheduler \
-    --schedule="0 * * * *" \
-    --uri="https://us-central1-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${PROJECT_ID}/jobs/news-api-job:run" \
-    --http-method=POST \
-    --oauth-service-account-email=${PROJECT_ID}@appspot.gserviceaccount.com
-```
-
-## Configuration Options
-
-The application can be configured through environment variables:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `QUERY` | News API search query | "technology" |
-| `LANGUAGE` | Language for news articles | "en" |
-| `DAYS_BACK` | Number of days to look back | 1 |
-| `ARTICLE_LIMIT` | Maximum number of articles to fetch | 100 |
-| `BIGQUERY_DATASET` | BigQuery dataset name | "news_data" |
-| `BIGQUERY_TABLE` | BigQuery table name | "articles" |
-
-## Code Structure
-
-```
-├── Dockerfile           # Container configuration
-├── main.py              # Entry point for the application
-├── requirements.txt     # Python dependencies
-├── src/
-│   ├── news_api.py      # News API client
-│   ├── bigquery.py      # BigQuery interaction
-│   └── data_transform.py # Data transformation logic
-├── tests/               # Unit and integration tests
-└── terraform/           # IaC for deployment
-```
-
-## How it Works
-
-1. The Cloud Scheduler triggers the Cloud Run job at the specified interval
-2. The job fetches the News API key from Secret Manager
-3. It queries the News API for recent articles matching the configured parameters
-4. The data is transformed into the BigQuery schema format
-5. The articles are inserted into the BigQuery table
-6. Logs are written to Cloud Logging
-
-## Development
-
-### Local Testing
+### 3. Local Development
 
 ```bash
 # Install dependencies
 pip install -r requirements.txt
 
-# Set environment variables
-export NEWS_API_KEY=your-api-key
-export PROJECT_ID=your-project-id
-
 # Run locally
-python main.py
+python src/main.py
 ```
 
-### Running Tests
+### 4. Build and Deploy
 
 ```bash
-pytest
+# Build Docker image
+docker build -t gcr.io/PROJECT_ID/news-fetcher .
+
+# Push to Container Registry
+docker push gcr.io/PROJECT_ID/news-fetcher
+
+# Deploy Cloud Run Job
+gcloud run jobs create news-fetcher-job \
+  --image gcr.io/PROJECT_ID/news-fetcher \
+  --region us-central1 \
+  --set-env-vars NEWS_API_KEY=$NEWS_API_KEY \
+  --set-env-vars GOOGLE_CLOUD_PROJECT=$PROJECT_ID
 ```
 
-## Deployment with Terraform
+## Usage
 
-The `terraform` directory contains Infrastructure as Code to deploy all components:
+### Manual Execution
 
 ```bash
-cd terraform
-terraform init
-terraform apply
+# Execute the job manually
+gcloud run jobs execute news-fetcher-job --region us-central1
 ```
+
+### Scheduled Execution
+
+Create a Cloud Scheduler job to run automatically:
+
+```bash
+gcloud scheduler jobs create http news-fetcher-schedule \
+  --schedule="0 */6 * * *" \
+  --uri="https://us-central1-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/PROJECT_ID/jobs/news-fetcher-job:run" \
+  --http-method=POST \
+  --oauth-service-account-email=SERVICE_ACCOUNT_EMAIL
+```
+
+## Data Schema
+
+The pipeline stores news articles in BigQuery with the following schema:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | STRING | Unique article identifier |
+| title | STRING | Article headline |
+| description | STRING | Article summary |
+| content | STRING | Full article content |
+| author | STRING | Article author |
+| source | STRING | News source name |
+| url | STRING | Article URL |
+| published_at | TIMESTAMP | Publication timestamp |
+| created_at | TIMESTAMP | Record creation timestamp |
+| category | STRING | Article category |
+| language | STRING | Article language |
 
 ## Monitoring and Logging
 
-- View job execution history in Cloud Run console
-- Monitor BigQuery data in the BigQuery console
-- View logs in Cloud Logging with the filter:
-  ```
-  resource.type="cloud_run_job" AND resource.labels.job_name="news-api-job"
-  ```
+- **Logs**: View execution logs in Google Cloud Logging
+- **Metrics**: Monitor job performance in Google Cloud Monitoring
+- **Alerts**: Set up alerts for job failures or performance issues
+
+```bash
+# View recent logs
+gcloud logging read "resource.type=cloud_run_job" --limit=50
+
+# Monitor job executions
+gcloud run jobs executions list --job=news-fetcher-job --region=us-central1
+```
+
+## Configuration Options
+
+### News API Sources
+
+Currently supported news APIs:
+- NewsAPI.org
+- The Guardian API
+- Associated Press API
+- Custom REST APIs
+
+### BigQuery Configuration
+
+```python
+# Example table configuration
+TABLE_SCHEMA = [
+    {"name": "id", "type": "STRING", "mode": "REQUIRED"},
+    {"name": "title", "type": "STRING", "mode": "NULLABLE"},
+    {"name": "published_at", "type": "TIMESTAMP", "mode": "NULLABLE"},
+    # ... additional fields
+]
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Authentication Errors**
+   ```bash
+   gcloud auth application-default login
+   ```
+
+2. **BigQuery Permission Issues**
+   - Ensure service account has BigQuery Data Editor role
+   - Verify dataset exists and is accessible
+
+3. **API Rate Limits**
+   - Implement exponential backoff
+   - Consider multiple API keys for higher limits
+
+4. **Container Build Failures**
+   - Check Dockerfile syntax
+   - Verify all dependencies in requirements.txt
+
+### Debug Mode
+
+Enable verbose logging:
+```bash
+export LOG_LEVEL=DEBUG
+python src/main.py
+```
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Commit your changes: `git commit -am 'Add new feature'`
-4. Push to the branch: `git push origin feature/my-feature`
-5. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/new-source`)
+3. Commit your changes (`git commit -am 'Add new news source'`)
+4. Push to the branch (`git push origin feature/new-source`)
+5. Create a Pull Request
+
+## Cost Optimization
+
+- Use Cloud Run Jobs (pay-per-execution)
+- Implement efficient data deduplication
+- Set appropriate memory and CPU limits
+- Use BigQuery partitioning for large datasets
+
+## Security
+
+- Store API keys in Google Secret Manager
+- Use IAM roles with least privilege
+- Enable VPC connector for private network access
+- Implement input validation and sanitization
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgements
+## Support
 
-- [News API](https://newsapi.org/) for providing the news data
-- Google Cloud Platform documentation
+- Create an issue for bug reports
+- Check existing issues before submitting
+- Provide detailed reproduction steps
+
+---
+
+**Last Updated**: May 2025
