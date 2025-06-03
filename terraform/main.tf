@@ -34,6 +34,12 @@ module "batchnews_job" {
   containers = [
     {
       image = "${var.location}-docker.pkg.dev/${var.project_id}/batchnews/batchnews:latest"
+      env = [
+        {
+          name  = "PROJECT_ID"
+          value = var.project_id
+        }
+      ]
     }
   ]
   depends_on = [module.batch_job_artifact_registry]

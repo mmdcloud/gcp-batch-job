@@ -26,7 +26,7 @@ def call_news_api_and_ingest():
         )
 
     # Set up BigQuery client
-    project_id = 'encoded-alpha-457108-e8'
+    project_id = os.environ['PROJECT_ID']
     dataset_id = 'batchnews'
     table_id = 'batchnewstable'
     client = bigquery.Client(project=project_id)
