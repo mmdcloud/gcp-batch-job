@@ -22,7 +22,7 @@ module "batch_job_artifact_registry" {
   location      = var.location
   description   = var.repository_description
   repository_id = var.repository_id
-  shell_command = "bash ${path.cwd}/../code/artifact_push.sh batchnews ${var.location} ${var.project_id}"
+  shell_command = "bash ${path.cwd}/../src/artifact_push.sh batchnews ${var.location} ${var.project_id}"
 }
 
 module "batchnews_job" {
