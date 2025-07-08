@@ -1,0 +1,12 @@
+digraph INFRA {
+  node [ color = "black", fillcolor = "#E6E6E6", height =1, style = "filled,bold,rounded", fontname = "Arial" ];
+  "batch-job-sa" [ label = "batch-job-sa
+(google_service_account)", shape =rectangle ];
+  "batchnews" [ label = "batchnews
+(google_bigquery_dataset)", shape =cylinder, fillcolor = "#FFCFB3" ];
+  "batchnewstable" [ label = "batchnewstable
+(google_bigquery_table)", shape =cylinder, fillcolor = "#FFCFB3" ];
+  "batchnews" -> "batch-job-sa";
+  "batchnews" -> "batchnews";
+  "batchnewstable" -> "batchnews";
+}
