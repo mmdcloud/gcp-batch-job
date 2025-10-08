@@ -1,8 +1,9 @@
 locals {
   artifact_type = "DOCKER"
 }
-
+# -------------------------------------------------------------------------------
 # Service account for batch job
+# -------------------------------------------------------------------------------
 module "batch_job_sa" {
   source       = "./modules/iam"
   account_id   = "batch-job-sa"
@@ -15,8 +16,9 @@ module "batch_job_sa" {
   ]
   project_id = var.project_id
 }
-
+# -------------------------------------------------------------------------------
 # Artifact Registry
+# -------------------------------------------------------------------------------
 module "batch_job_artifact_registry" {
   source        = "./modules/artifact-registry"
   location      = var.location
@@ -24,7 +26,9 @@ module "batch_job_artifact_registry" {
   repository_id = var.repository_id
   shell_command = "bash ${path.cwd}/../src/artifact_push.sh batchnews ${var.location} ${var.project_id}"
 }
-
+# -------------------------------------------------------------------------------
+# Cloud Run Job
+# -------------------------------------------------------------------------------
 module "batchnews_job" {
   source              = "./modules/cloud-run-job"
   name                = "batchnews"
@@ -45,7 +49,9 @@ module "batchnews_job" {
   depends_on = [module.batch_job_artifact_registry]
 }
 
+# -------------------------------------------------------------------------------
 # BigQuery configuration 
+# -------------------------------------------------------------------------------
 module "batch_job_bq" {
   source     = "./modules/bigquery"
   dataset_id = "batchnews"
