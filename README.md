@@ -2,6 +2,7 @@
 
 [![Terraform](https://img.shields.io/badge/terraform-%235835CC.svg?style=for-the-badge&logo=terraform&logoColor=white)](https://www.terraform.io/)
 [![Google Cloud](https://img.shields.io/badge/GoogleCloud-%234285F4.svg?style=for-the-badge&logo=google-cloud&logoColor=white)](https://cloud.google.com/)
+[![Docker](https://img.shields.io/badge/docker-257bd6?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 
 This project implements an automated data pipeline that collects news articles from the News API and stores them in Google BigQuery. It leverages Google Cloud Platform services including Cloud Run Jobs, Artifact Registry, and BigQuery to create a reliable and scalable batch processing system.
 
