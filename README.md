@@ -1,5 +1,8 @@
 # News Data Pipeline: Automated News Collection and Storage in BigQuery
 
+[![Terraform](https://img.shields.io/badge/terraform-%235835CC.svg?style=for-the-badge&logo=terraform&logoColor=white)](https://www.terraform.io/)
+[![Google Cloud](https://img.shields.io/badge/GoogleCloud-%234285F4.svg?style=for-the-badge&logo=google-cloud&logoColor=white)](https://cloud.google.com/)
+
 This project implements an automated data pipeline that collects news articles from the News API and stores them in Google BigQuery. It leverages Google Cloud Platform services including Cloud Run Jobs, Artifact Registry, and BigQuery to create a reliable and scalable batch processing system.
 
 The pipeline fetches top US headlines using the News API, processes the article data (title, description, and URL), and loads it into a BigQuery table for analysis. The entire infrastructure is defined as code using Terraform, making it reproducible and maintainable. The solution runs as a containerized application on Cloud Run Jobs, with the container image stored in Artifact Registry.
