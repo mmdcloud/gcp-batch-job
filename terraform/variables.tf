@@ -1,15 +1,15 @@
 variable "location" {
-  type    = string
+  type = string
 }
 
 variable "project_id" {
-  type    = string
+  type = string
 }
 
 variable "repository_id" {
-  type    = string
+  type = string
 }
 
 variable "repository_description" {
-  type    = string
+  type = string
 }

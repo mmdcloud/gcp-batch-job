@@ -1,6 +1,7 @@
 locals {
   artifact_type = "DOCKER"
 }
+
 # -------------------------------------------------------------------------------
 # Service account for batch job
 # -------------------------------------------------------------------------------
@@ -16,6 +17,7 @@ module "batch_job_sa" {
   ]
   project_id = var.project_id
 }
+
 # -------------------------------------------------------------------------------
 # Artifact Registry
 # -------------------------------------------------------------------------------
@@ -24,8 +26,21 @@ module "batch_job_artifact_registry" {
   location      = var.location
   description   = var.repository_description
   repository_id = var.repository_id
-  shell_command = "bash ${path.cwd}/../src/artifact_push.sh batchnews ${var.location} ${var.project_id}"
 }
+
+resource "null_resource" "build_and_push_image" {
+  triggers = {
+    always_run = timestamp()
+  }
+  provisioner "local-exec" {
+    command = "bash ${path.cwd}/../src/artifact_push.sh batchnews ${var.location} ${var.project_id}"
+  }
+
+  depends_on = [
+    module.batch_job_artifact_registry
+  ]
+}
+
 # -------------------------------------------------------------------------------
 # Cloud Run Job
 # -------------------------------------------------------------------------------
