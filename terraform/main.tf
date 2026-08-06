@@ -61,7 +61,7 @@ module "batchnews_job" {
       ]
     }
   ]
-  depends_on = [module.batch_job_artifact_registry]
+  depends_on = [null_resource.build_and_push_image]
 }
 
 # -------------------------------------------------------------------------------
