@@ -23,7 +23,9 @@ module "batch_job_sa" {
 # -------------------------------------------------------------------------------
 module "batch_job_artifact_registry" {
   source        = "./modules/artifact-registry"
+  artifact_type = "DOCKER"
   location      = var.location
+  project_id    = var.project_id
   description   = var.repository_description
   repository_id = var.repository_id
 }
@@ -45,11 +47,13 @@ resource "null_resource" "build_and_push_image" {
 # Cloud Run Job
 # -------------------------------------------------------------------------------
 module "batchnews_job" {
-  source              = "./modules/cloud-run-job"
+  source              = "./modules/cloud-run"
   name                = "batchnews"
+  project_id          = var.project_id
+  type                = "JOB"
+  service_account     = module.batch_job_sa.email
   location            = var.location
   deletion_protection = false
-  sa                  = module.batch_job_sa.email
   containers = [
     {
       image = "${var.location}-docker.pkg.dev/${var.project_id}/batchnews/batchnews:latest"
